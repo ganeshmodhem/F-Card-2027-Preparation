@@ -1,0 +1,9 @@
+{
+  "name": "F-Card Customs Exam Master",
+  "short_name": "F-Card Exam",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0f3d5e",
+  "icons": []
+}
