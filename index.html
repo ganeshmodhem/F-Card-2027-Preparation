@@ -31,11 +31,15 @@ function render(){let L=list().filter(q=>(q.q+" "+q.options.map(o=>o.text).join(
  let title=year==="DUP"?"🔁 Duplicate Questions":year==="WRONG"?"❌ Wrong Questions":year;
  let out=`<div class="stats"><b>${title}</b> — ${total} Questions ${score!==""?`<span style="float:right">${answered}/${total} • Score: ${score}</span>`:""}${year!=="WRONG"?`<div class="progress"><div class="bar" style="width:${total?answered/total*100:0}%"></div></div>`:""}</div>`;
  if(!L.length)out+=`<div class="empty">${year==="WRONG"?"🎉 सध्या Wrong Questions नाहीत.":"Question सापडला नाही."}</div>`;
- L.forEach(q=>{let a=store(q),key=year==="DUP"?q._id:q._id;out+=`<div class="card"><div class="q"><span class="num">Q${q.no}.</span> ${esc(q.q.replace(/^Q\\d+\\.\\s*/,""))}</div>`;
+ L.forEach(q=>{let a=store(q),key=year==="DUP"?q._id:(year==="WRONG"?q._id:q.no);out+=`<div class="card"><div class="q"><span class="num">Q${q.no}.</span> ${esc(q.q.replace(/^Q\\d+\\.\\s*/,""))}</div>`;
  if(year==="DUP")out+=`<div class="years">या प्रश्नाचा paper: ${q.years.join(", ")}</div>`;
- q.options.forEach(o=>{let c=a?(o.letter===q.answer?"correct":o.letter===a.s?"wrong":""):"";out+=`<button class="opt ${c}" ${a?"disabled":""} onclick="pick('${key}','${o.letter}')"><b>${o.letter}.</b> ${esc(o.text)}</button>`});
+ q.options.forEach(o=>{let c=a?(o.letter===q.answer?"correct":o.letter===a.s?"wrong":""):"";out+=`<button type="button" class="opt ${c}" ${a?"disabled":""} data-question-id="${esc(String(key))}" data-option="${esc(o.letter)}"><b>${o.letter}.</b> ${esc(o.text)}</button>`});
  if(a){let ok=a.s===q.answer;out+=`<div class="fb show ${ok?"ok":"bad"}">${ok?"✅ बरोबर उत्तर!":"❌ चुकीचे उत्तर!"}<br><b>Answer: ${esc(q.answer)} — ${esc(q.answer_text)}</b><div style="margin-top:7px"><b>📖 Explanation:</b> ${esc(q.explanation||"Source paper मध्ये explanation उपलब्ध नाही.")}</div><div class="golden">🔑 Golden Point: ${esc(q.golden)}</div>${year==="WRONG"?`<div style="margin-top:8px"><button class="btn" onclick="retryAgain('${q._id}')">🔄 Re-attempt Again</button></div>`:""}</div>`}out+=`</div>`});
- document.getElementById("app").innerHTML=out}
+ document.getElementById("app").innerHTML=out;
+ document.querySelectorAll("#app .opt:not([disabled])").forEach(btn=>{
+   btn.addEventListener("click",()=>pick(btn.dataset.questionId,btn.dataset.option));
+ });
+}
 function retryAgain(id){delete retryState[id];saveData();render()}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{year=b.dataset.y;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.getElementById("search").value="";term="";render();scrollTo(0,0)});
 document.getElementById("search").oninput=e=>{term=e.target.value.toLowerCase();render()};
