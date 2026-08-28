@@ -14,11 +14,17 @@ function findYear(q){for(const y of Object.keys(DATA)){if(DATA[y].some(x=>x.no==
 function wrongList(){let a=[];for(const y of Object.keys(DATA)){for(const q of DATA[y]){let st=state[y].a[q.no];if(st&&st.s!==q.answer)a.push({...q,_wy:y,_id:"wrong_"+y+"_"+q.no});}}return a}
 function list(){if(year==="DUP")return DUP;if(year==="WRONG")return wrongList();return DATA[year]}
 function store(q){if(year==="DUP")return dupState.a[q._id];if(year==="WRONG")return retryState[q._id];return state[year].a[q.no]}
-function pick(id,s){let q=list().find(x=>(year==="DUP"?x._id===id:x._id===id));if(!q)return;
- if(year==="DUP"){if(dupState.a[q._id])return;dupState.a[q._id]={s};if(s===q.answer)dupState.score++}
- else if(year==="WRONG"){retryState[q._id]={s};saveData()}
- else {if(state[year].a[q.no])return;state[year].a[q.no]={s};if(s===q.answer)state[year].score++}
- saveData();render();}
+function pick(id,s){
+ let q;
+ if(year==="DUP") q=DUP.find(x=>x._id===id);
+ else if(year==="WRONG") q=wrongList().find(x=>x._id===id);
+ else q=DATA[year].find(x=>String(x.no)===String(id));
+ if(!q)return;
+ if(year==="DUP"){if(dupState.a[q._id])return;dupState.a[q._id]={s};if(s===q.answer)dupState.score++;}
+ else if(year==="WRONG"){retryState[q._id]={s};}
+ else {if(state[year].a[q.no])return;state[year].a[q.no]={s};if(s===q.answer)state[year].score++;}
+ saveData();render();
+}
 function render(){let L=list().filter(q=>(q.q+" "+q.options.map(o=>o.text).join(" ")).toLowerCase().includes(term));
  let total=list().length,answered=year==="DUP"?Object.keys(dupState.a).length:year==="WRONG"?Object.keys(retryState).length:Object.keys(state[year].a).length;
  let score=year==="DUP"?dupState.score:year==="WRONG"?"":state[year].score;
@@ -36,8 +42,8 @@ document.getElementById("search").oninput=e=>{term=e.target.value.toLowerCase();
 document.getElementById("reset").onclick=()=>{if(year==="DUP"){dupState.a={};dupState.score=0}else if(year==="WRONG"){Object.keys(retryState).forEach(k=>delete retryState[k])}else state[year]={a:{},score:0};saveData();render()};
 function saveData(){localStorage.setItem("fcard_progress",JSON.stringify(state));localStorage.setItem("fcard_dup",JSON.stringify(dupState));localStorage.setItem("fcard_retry",JSON.stringify(retryState))}
 function loadData(){try{let s=JSON.parse(localStorage.getItem("fcard_progress")||"{}");Object.keys(DATA).forEach(y=>{if(s[y])state[y]=s[y]});let d=JSON.parse(localStorage.getItem("fcard_dup")||"{}");if(d.a){dupState.a=d.a;dupState.score=d.score||0}let r=JSON.parse(localStorage.getItem("fcard_retry")||"{}");Object.assign(retryState,r)}catch(e){}render()}
-function setupPin(){let saved=localStorage.getItem("fcard_pin");if(!saved){document.getElementById("pin").innerHTML=`<div class="pinbox"><div class="pinpanel"><h2>🔐 App PIN Set करा</h2><div>तुमचा 4 digit PIN तयार करा</div><input id="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><div class="pinerr"></div><button onclick="setPin()">Set PIN</button></div></div>`}else{document.getElementById("pin").innerHTML=`<div class="pinbox"><div class="pinpanel"><h2>🔐 F Card App</h2><div>PIN टाका</div><input id="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><div class="pinerr"></div><button onclick="unlock()">Open App</button></div></div>`}}
-function setPin(){let v=document.getElementById("pininput").value;if(!/^\d{4}$/.test(v)){document.querySelector(".pinerr").textContent="कृपया 4 digit PIN द्या.";return}localStorage.setItem("fcard_pin",v);document.getElementById("pin").innerHTML="";loadData()}
-function unlock(){let v=document.getElementById("pininput").value;if(v===localStorage.getItem("fcard_pin")){document.getElementById("pin").innerHTML="";loadData()}else document.querySelector(".pinerr").textContent="PIN चुकीचा आहे."}
+function setupPin(){let saved=localStorage.getItem("fcard_pin");if(saved && localStorage.getItem("fcard_auto_unlock")==="1"){document.getElementById("pin").innerHTML="";loadData();return}if(!saved){document.getElementById("pin").innerHTML=`<div class="pinbox"><div class="pinpanel"><h2>🔐 App PIN Set करा</h2><div>तुमचा 4 digit PIN तयार करा</div><input id="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><div class="pinerr"></div><button onclick="setPin()">Set PIN</button></div></div>`}else{document.getElementById("pin").innerHTML=`<div class="pinbox"><div class="pinpanel"><h2>🔐 F Card App</h2><div>PIN टाका</div><input id="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"><div class="pinerr"></div><button onclick="unlock()">Open App</button></div></div>`}}
+function setPin(){let v=document.getElementById("pininput").value;if(!/^\d{4}$/.test(v)){document.querySelector(".pinerr").textContent="कृपया 4 digit PIN द्या.";return}localStorage.setItem("fcard_pin",v);localStorage.setItem("fcard_auto_unlock","1");sessionStorage.setItem("fcard_unlocked","1");document.getElementById("pin").innerHTML="";loadData()}
+function unlock(){let v=document.getElementById("pininput").value;if(v===localStorage.getItem("fcard_pin")){localStorage.setItem("fcard_auto_unlock","1");sessionStorage.setItem("fcard_unlocked","1");document.getElementById("pin").innerHTML="";loadData()}else document.querySelector(".pinerr").textContent="PIN चुकीचा आहे."}
 window.addEventListener("beforeunload",saveData);setupPin();
 </script></body></html>
