@@ -38,6 +38,10 @@ body.dark .iconbtn.active{background:#3b2608;color:#fbbf24}
 .changeCard{background:#fff7ed;border-color:#fed7aa}.changeRow{border-color:#ffedd5}
 body.dark .changeCard{background:#291b0b;border-color:#5b3a12}.changeTitle{color:#9a3412}
 body.dark .changeTitle{color:#fdba74}
+
+/* V5 answer retry / re-select */
+.option.selected{outline:2px solid var(--primary);background:var(--soft)}
+.iconbtn[data-retry]{font-size:15px}
 @media(max-width:700px){.statGrid{grid-template-columns:repeat(2,1fr)}.topActions{display:grid;grid-template-columns:1fr 1fr}.actionBtn{width:100%}.qtools{gap:4px}.iconbtn{padding:7px}.question,.mrq{font-size:16px}}
 @media(min-width:900px){main{max-width:980px}}
 
@@ -194,15 +198,17 @@ function fcResult(x,chosen){
 }
 function fcCard(x,mode='normal'){
  const saved=!!FC.bookmarks[x.id], old=FC.answers[x.id], opts=x.options||[];
- return `<article class="card" data-id="${x.id}" data-no="${x.no}" data-year="${x.year}"><div class="qhead"><div class="qno">Q.${x.no}</div><div class="qtools"><span class="badge">${x.year}</span><button class="iconbtn ${saved?'active':''}" data-book="1" title="Bookmark">${saved?'★':'☆'}</button></div></div><div class="label">English Question:</div><div class="question">${fcEscape(x.english)}</div><div class="label">मराठी Question:</div><div class="mrq">${fcEscape(x.marathi)}</div><div class="label">Options:</div>${opts.length?opts.map(o=>`<button class="option ${old===o.key?'selected':''}" data-key="${o.key}" ${old?'disabled':''}>${fcEscape(o.key)}. ${fcEscape(o.text)}</button>`).join(''):'<div class="noopts">या प्रश्नासाठी source मध्ये Options उपलब्ध नाहीत.</div>'}<div class="lock">${old?'🔓 हा प्रश्न आधी solve केला आहे.':'🔒 Option select करा; त्यानंतर Explanation दिसेल.'}</div><div class="result ${old?'show':''}">${old?fcResult(x,old):''}</div></article>`;
+ return `<article class="card" data-id="${x.id}" data-no="${x.no}" data-year="${x.year}"><div class="qhead"><div class="qno">Q.${x.no}</div><div class="qtools"><span class="badge">${x.year}</span><button class="iconbtn ${saved?'active':''}" data-book="1" title="Bookmark">${saved?'★':'☆'}</button><button class="iconbtn" data-retry="1" title="Reset this question">↻</button></div></div><div class="label">English Question:</div><div class="question">${fcEscape(x.english)}</div><div class="label">मराठी Question:</div><div class="mrq">${fcEscape(x.marathi)}</div><div class="label">Options:</div>${opts.length?opts.map(o=>`<button class="option ${old===o.key?'selected':''} ${old&&x.answer===o.key?'correct':''} ${old&&old===o.key&&old!==x.answer?'wrong':''}" data-key="${o.key}">${fcEscape(o.key)}. ${fcEscape(o.text)}</button>`).join(''):'<div class="noopts">या प्रश्नासाठी source मध्ये Options उपलब्ध नाहीत.</div>'}<div class="lock">${old?'🔓 उत्तर दिले आहे. पुन्हा कोणताही Option select करून answer बदलू शकता.':'🔒 Option select करा; त्यानंतर Explanation दिसेल.'}</div><div class="result ${old?'show':''}">${old?fcResult(x,old):''}</div></article>`;
 }
 function fcBindCards(){document.querySelectorAll('.card').forEach(el=>{
  const id=el.dataset.id,y=el.dataset.year,n=Number(el.dataset.no),x=DATA[y].find(q=>q.no===n);if(!x)return;
  el.querySelector('[data-book]')?.addEventListener('click',e=>{e.stopPropagation();if(FC.bookmarks[id])delete FC.bookmarks[id];else FC.bookmarks[id]=1;fcSave();render();});
+ el.querySelector('[data-retry]')?.addEventListener('click',e=>{e.stopPropagation();delete FC.answers[id];delete FC.wrong[id];fcSave();fcSaveResume();render();setTimeout(()=>document.querySelector(`[data-id="${id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),80);});
  el.querySelectorAll('.option').forEach(btn=>btn.addEventListener('click',()=>{
-   if(FC.answers[id])return;const k=btn.dataset.key;FC.answers[id]=k;if(x.answer&&k!==x.answer)FC.wrong[id]=1;else delete FC.wrong[id];fcSave();fcSaveResume();
-   el.querySelectorAll('.option').forEach(b=>{b.disabled=true;b.classList.add('disabled');if(x.answer&&b.dataset.key===x.answer)b.classList.add('correct')});if(x.answer&&k!==x.answer)btn.classList.add('wrong');
-   el.querySelector('.lock').textContent='🔓 Answer saved — Explanation उघडले आहे.';const r=el.querySelector('.result');r.innerHTML=fcResult(x,k);r.classList.add('show');fcMini();fcSetStats(stats.innerHTML.split('<div class="progressWrap">')[0]);
+   const k=btn.dataset.key;FC.answers[id]=k;if(x.answer&&k!==x.answer)FC.wrong[id]=1;else delete FC.wrong[id];fcSave();fcSaveResume();
+   el.querySelectorAll('.option').forEach(b=>{b.classList.remove('selected','correct','wrong');if(b.dataset.key===k)b.classList.add('selected');if(x.answer&&b.dataset.key===x.answer)b.classList.add('correct');if(x.answer&&k!==x.answer&&b.dataset.key===k)b.classList.add('wrong')});
+   el.querySelector('.lock').textContent='🔓 Answer saved. पुन्हा कोणताही Option select करून answer बदलू शकता.';
+   const r=el.querySelector('.result');r.innerHTML=fcResult(x,k);r.classList.add('show');fcMini();fcSetStats(stats.innerHTML.split('<div class="progressWrap">')[0]);
  }));
  });}
 function fcPopulateJump(arr){const box=document.getElementById('jumpSelect');box.innerHTML='<option value="">Jump to Question…</option>'+arr.map(x=>`<option value="${x.id}">Q.${x.no} — ${x.year}</option>`).join('')}
