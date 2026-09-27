@@ -40,19 +40,63 @@ body.dark .changeCard{background:#291b0b;border-color:#5b3a12}.changeTitle{color
 body.dark .changeTitle{color:#fdba74}
 @media(max-width:700px){.statGrid{grid-template-columns:repeat(2,1fr)}.topActions{display:grid;grid-template-columns:1fr 1fr}.actionBtn{width:100%}.qtools{gap:4px}.iconbtn{padding:7px}.question,.mrq{font-size:16px}}
 @media(min-width:900px){main{max-width:980px}}
+
+/* ===== MOBILE-FIRST COMPACT F-CARD UI v2 ===== */
+.moreTools{display:none;grid-column:1/-1;gap:7px}
+.moreTools.show{display:grid;grid-template-columns:repeat(3,1fr)}
+.compactActions{align-items:stretch}
+@media(max-width:700px){
+  header{padding:10px 12px 8px}
+  h1{font-size:19px;line-height:1.2}
+  .sub{font-size:12px;line-height:1.4;margin-top:4px}
+  .tabs{margin-top:8px;gap:6px}
+  .tab,.studybtn{padding:9px 12px;font-size:14px;border-radius:11px}
+  main{padding:7px}
+  .topActions{margin:7px 0;gap:6px}
+  .compactActions{grid-template-columns:repeat(3,1fr)}
+  .compactActions .actionBtn{padding:9px 5px;font-size:12px;border-radius:10px;min-height:42px}
+  .moreTools.show .actionBtn{font-size:12px}
+  .toolbar{margin-bottom:7px}
+  .search{padding:10px;font-size:13px}
+  .btn{padding:9px 10px;font-size:13px}
+  .notice{padding:9px;font-size:11px;margin-bottom:8px}
+  .stats{padding:9px;margin-bottom:7px;font-size:12px}
+  .statGrid{gap:5px;margin:7px 0}
+  .miniStat{padding:7px;border-radius:10px}
+  .miniStat b{font-size:16px}
+  .miniStat span{font-size:10px}
+  .card{padding:11px;margin:9px 0;border-radius:13px}
+  .qhead{margin-bottom:8px}
+  .qno{font-size:17px}
+  .label{font-size:12px;margin:9px 0 4px}
+  .question,.mrq{font-size:15px;line-height:1.55}
+  .option{padding:11px;margin:6px 0;font-size:14px;border-radius:10px}
+  .lock{font-size:11px;margin-top:7px}
+  .answerBox{padding:10px;font-size:14px}
+  .sourceLine{font-size:13px;line-height:1.5}
+  .jumpBox{margin:6px 0;padding:7px}
+  .jumpBox select{font-size:13px}
+  .quizBanner{padding:10px;margin:7px 0;border-radius:12px}
+  .studyIntro{padding:10px;font-size:13px;margin:7px 0}
+  details.studyTopic>summary{padding:12px 13px;font-size:15px}
+}
+@media(min-width:701px){.compactActions{display:flex;flex-wrap:wrap}.moreTools.show{display:flex}.moreTools{grid-column:auto}}
 </style></head><body><header>
 <h1>📘 F Card / CBLE — 7 Year Master Question Bank</h1>
 <div class="sub">2019–2025 • Quiz + Master Study • Progress Save • Bookmark • Random Quiz • Revision Tools</div>
 <div class="tabs" id="tabs"></div>
 </header><main>
-<div class="topActions">
-<button class="actionBtn study" id="masterBtn">📚 Master Study</button>
+<div class="topActions compactActions">
 <button class="actionBtn" id="randomBtn">🎲 Random 20</button>
 <button class="actionBtn" id="wrongBtn">❌ Wrong Review</button>
 <button class="actionBtn" id="bookBtn">⭐ Bookmarks</button>
+<button class="actionBtn" id="moreBtn">⚙️ More Tools</button>
+<div class="moreTools" id="moreTools">
 <button class="actionBtn" id="darkBtn">🌙 Dark Mode</button>
 <button class="actionBtn" id="jumpBtn">🔢 Jump Q.</button>
 <button class="actionBtn" id="clearBtn">🗑️ Reset Progress</button>
+</div>
+<button class="actionBtn study" id="masterBtn" style="display:none">📚 Master Study</button>
 </div>
 <div class="toolbar"><input id="search" class="search" placeholder="Question / option / explanation search करा…"><button id="reset" class="btn">↻ Reset</button></div>
 <div class="jumpBox" id="jumpBox"><select id="jumpSelect"><option value="">Jump to Question…</option></select><button class="btn" id="jumpClose">Close</button></div>
@@ -140,6 +184,7 @@ function renderStudyEnhanced(){
 function fcRandom(){const pool=fcAll();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}window.FC_RANDOM=pool.slice(0,20);window.FC_FILTER_LABEL='random';window.FC_FILTER=null;studyMode=false;renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})}
 function fcFilter(kind){window.FC_FILTER_LABEL=kind;window.FC_FILTER=null;studyMode=false;search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})}
 document.getElementById('masterBtn').onclick=()=>{studyMode=true;window.FC_FILTER_LABEL='';search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})};
+document.getElementById('moreBtn').onclick=()=>document.getElementById('moreTools').classList.toggle('show');
 document.getElementById('randomBtn').onclick=fcRandom;
 document.getElementById('wrongBtn').onclick=()=>fcFilter('wrong');
 document.getElementById('bookBtn').onclick=()=>fcFilter('bookmarks');
