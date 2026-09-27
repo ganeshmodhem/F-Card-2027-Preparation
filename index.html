@@ -176,10 +176,10 @@ FC.answers=FC.answers||{};FC.bookmarks=FC.bookmarks||{};FC.wrong=FC.wrong||{};
 /* ===== RESUME AFTER REFRESH ===== */
 FC.resume=FC.resume||{};
 let FC_RESUME_PENDING=true;
-function fcSaveResume(){try{FC.resume={year:year,studyMode:studyMode,filter:window.FC_FILTER_LABEL||'',questionId:(document.querySelector('.card:focus-within')||document.querySelector('.card'))?.dataset?.id||FC.resume.questionId||'',scrollY:window.scrollY,studyOpen:[...document.querySelectorAll('details.studyTopic')].map((d,i)=>d.open?i:-1).filter(i=>i>=0)};fcSave()}catch(e){}}
+function fcSaveResume(){try{const cards=[...document.querySelectorAll('.card')];let current=null,best=Infinity;for(const c of cards){const r=c.getBoundingClientRect();const d=Math.abs(r.top-120);if(r.bottom>90&&d<best){best=d;current=c}}FC.resume={year:year,studyMode:studyMode,filter:window.FC_FILTER_LABEL||'',questionId:current?.dataset?.id||FC.resume.questionId||'',scrollY:window.scrollY,studyOpen:[...document.querySelectorAll('details.studyTopic')].map((d,i)=>d.open?i:-1).filter(i=>i>=0)};fcSave()}catch(e){}}
 let FC_SCROLL_TIMER;
 window.addEventListener('scroll',()=>{clearTimeout(FC_SCROLL_TIMER);FC_SCROLL_TIMER=setTimeout(fcSaveResume,500)},{passive:true});
-function fcRestoreResume(){if(!FC_RESUME_PENDING)return;FC_RESUME_PENDING=false;try{const r=FC.resume||{};if(r.year&&DATA[r.year])year=r.year;if(typeof r.studyMode==='boolean')studyMode=r.studyMode;window.FC_FILTER_LABEL=r.filter||'';renderTabs();render();setTimeout(()=>{if(r.questionId){const el=document.querySelector('[data-id=\"'+r.questionId+'\"]');if(el)el.scrollIntoView({block:'center'})}else if(Number.isFinite(r.scrollY))window.scrollTo(0,r.scrollY);},120)}catch(e){}}
+function fcRestoreResume(){if(!FC_RESUME_PENDING)return;FC_RESUME_PENDING=false;try{const r=FC.resume||{};if(r.year&&DATA[r.year])year=r.year;if(typeof r.studyMode==='boolean')studyMode=r.studyMode;window.FC_FILTER_LABEL=r.filter||'';renderTabs();render();setTimeout(()=>{if(Number.isFinite(r.scrollY)&&r.scrollY>80){window.scrollTo({top:r.scrollY,behavior:'auto'})}else if(r.questionId){const el=document.querySelector('[data-id=\"'+r.questionId+'\"]');if(el)el.scrollIntoView({block:'start',behavior:'auto'})}},180)}catch(e){}}
 
 function fcSave(){try{localStorage.setItem(FC_KEY,JSON.stringify(FC));}catch(e){}}
 function fcId(y,n){return y+'-'+n}
@@ -238,14 +238,14 @@ function renderStudyEnhanced(){
 }
 function fcRandom(){const pool=fcAll();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}window.FC_RANDOM=pool.slice(0,20);window.FC_FILTER_LABEL='random';window.FC_FILTER=null;studyMode=false;renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})}
 function fcFilter(kind){window.FC_FILTER_LABEL=kind;window.FC_FILTER=null;studyMode=false;search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})}
-document.getElementById('masterBtn').onclick=()=>{studyMode=true;window.FC_FILTER_LABEL='';search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})};
+document.getElementById('masterBtn').onclick=()=>{studyMode=true;window.FC_FILTER_LABEL='';search.value='';renderTabs();render();fcSaveResume();window.scrollTo({top:0,behavior:'smooth'})};
 document.getElementById('moreBtn').onclick=()=>document.getElementById('moreTools').classList.toggle('show');
-document.getElementById('randomBtn').onclick=fcRandom;
+document.getElementById('randomBtn').onclick=()=>{fcRandom();fcSaveResume()};
 document.getElementById('wrongBtn').onclick=()=>fcFilter('wrong');
 document.getElementById('bookBtn').onclick=()=>fcFilter('bookmarks');
 document.getElementById('darkBtn').onclick=()=>{document.body.classList.toggle('dark');FC.dark=document.body.classList.contains('dark');fcSave();document.getElementById('darkBtn').textContent=FC.dark?'☀️ Light Mode':'🌙 Dark Mode'};
 document.getElementById('jumpBtn').onclick=()=>document.getElementById('jumpBox').classList.toggle('show');document.getElementById('jumpClose').onclick=()=>document.getElementById('jumpBox').classList.remove('show');document.getElementById('jumpSelect').onchange=e=>{const id=e.target.value;if(!id)return;document.querySelector(`[data-id="${id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'})};
-document.getElementById('clearBtn').onclick=()=>{if(confirm('सर्व saved answers, bookmarks आणि wrong-review progress delete करायचा आहे का?')){FC={answers:{},bookmarks:{},wrong:{},dark:document.body.classList.contains('dark')};fcSave();render()}};
+document.getElementById('clearBtn').onclick=()=>{if(confirm('सर्व saved answers, bookmarks, wrong-review progress आणि Resume position delete करायची आहे का?')){FC={answers:{},bookmarks:{},wrong:{},dark:document.body.classList.contains('dark'),resume:{}};fcSave();render();window.scrollTo({top:0,behavior:'smooth'});}};
 if(FC.dark){document.body.classList.add('dark');document.getElementById('darkBtn').textContent='☀️ Light Mode'}
 document.getElementById('rulesBtn').onclick=()=>document.getElementById('rulesPanel').classList.toggle('show');
 search.oninput=()=>{window.FC_FILTER_LABEL='';window.FC_FILTER=null;render()};document.getElementById('reset').onclick=()=>{search.value='';window.FC_FILTER_LABEL='';window.FC_FILTER=null;studyMode=false;renderTabs();render()};
