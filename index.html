@@ -155,7 +155,7 @@ function renderTabs(){tabs.innerHTML=`<button id="studyBtn" class="studybtn ${st
 function render(){if(studyMode){renderStudy();return}const q=search.value.trim().toLowerCase(),all=DATA[year],arr=q?all.filter(x=>JSON.stringify(x).toLowerCase().includes(q)):all;stats.innerHTML=`<b>${year}</b> — Total questions: <b>${all.length}</b> &nbsp;|&nbsp; Showing: <b>${arr.length}</b>`;if(!arr.length){app.innerHTML='<div class="empty">No matching question found.</div>';return}app.innerHTML=arr.map(card).join("");bind()}
 function escHtml(s){return esc(s)}
 function renderStudy(){const sb=document.getElementById("studyBtn");if(sb)sb.classList.add("active");const q=search.value.trim().toLowerCase();let html=`<div class="studyIntro"><b>📚 Master Study Material</b><br>2019–2025 मधील repeated / same-topic questions एकदाच compact revision form मध्ये दिले आहेत. प्रत्येक point ला year/question reference आहे. <b>⚠️ Source answers वेगळे असतील तर ते तसेच दाखवले आहेत; कायदा बदल झाला असे स्वतःहून गृहीत धरलेले नाही.</b></div>`;
-html+=`<details class="studyTopic" open><summary>🔄 Year-wise Answer / Rule Differences <span class="studyMeta">फक्त जिथे source answer/rule वेगळा दिसतो</span></summary>`;for(const c of CHANGE_DATA){html+=`<div class="changeCard"><div class="changeTitle">${escHtml(c.title)}</div><div style="margin:6px 0;font-weight:700">${escHtml(c.q)}</div>${c.rows.map(r=>`<div class="changeRow"><div class="changeYear">${escHtml(r[0])}</div><div>${escHtml(r[1])}</div></div>`).join("")}<div class="changeNote">${escHtml(c.note)}</div></div>`}html+=`</details>`;
+html+=`<details class="studyTopic"><summary>⚠️ Year-wise Answer / Rule Differences <span class="studyMeta">फक्त जिथे source answer/rule वेगळा दिसतो</span></summary>`;for(const c of CHANGE_DATA){html+=`<div class="changeCard"><div class="changeTitle">${escHtml(c.title)}</div><div style="margin:6px 0;font-weight:700">${escHtml(c.q)}</div>${c.rows.map(r=>`<div class="changeRow"><div class="changeYear">${escHtml(r[0])}</div><div>${escHtml(r[1])}</div></div>`).join("")}<div class="changeNote">${escHtml(c.note)}</div></div>`}html+=`</details>`;
 let shown=0;for(const t of STUDY_DATA.topics){const filtered=t.items.filter(it=>!q||(it.q+it.answer+it.point+it.source).toLowerCase().includes(q));if(q&&!filtered.length)continue;shown+=filtered.length;html+=`<details class="studyTopic"><summary>📘 ${escHtml(t.topic)} <span class="studyMeta">${filtered.length} core points</span></summary>`;for(const it of filtered){html+=`<div class="studyItem"><div class="studyQ">${escHtml(it.q)}</div><div class="studyAns">✅ ${escHtml(it.answer)}</div><div class="studyPoint">📌 ${escHtml(it.point)}</div><span class="studyYears">${escHtml(it.source)}</span></div>`}html+=`</details>`}app.innerHTML=html;stats.innerHTML=`<b>📚 Study Mode</b> — ${shown} compact core points • repeated questions merged • topics collapsed for quick revision`;bind()}
 
 function card(x){const opts=x.options||[];return `<article class="card" data-no="${x.no}"><div class="qhead"><div class="qno">Q.${x.no}</div><div class="badge">${year}</div></div><div class="label">English Question:</div><div class="question">${esc(x.english)}</div><div class="label">मराठी Question:</div><div class="mrq">${esc(x.marathi)}</div><div class="label">Options:</div>${opts.length?opts.map(o=>`<button class="option" data-key="${o.key}">${esc(o.key)}. ${esc(o.text)}</button>`).join(""):'<div class="noopts">या प्रश्नासाठी source मध्ये Options उपलब्ध नाहीत.</div>'}<div class="lock">🔒 Answer select करा; त्यानंतरच पुढील भाग दिसेल.</div><div class="result">${resultHtml(x)}</div></article>`}
@@ -169,6 +169,14 @@ const FC_KEY='fcard_master_progress_v3';
 let FC={answers:{},bookmarks:{},wrong:{},dark:false};
 try{FC=Object.assign(FC,JSON.parse(localStorage.getItem(FC_KEY)||'{}'));}catch(e){}
 FC.answers=FC.answers||{};FC.bookmarks=FC.bookmarks||{};FC.wrong=FC.wrong||{};
+/* ===== RESUME AFTER REFRESH ===== */
+FC.resume=FC.resume||{};
+let FC_RESUME_PENDING=true;
+function fcSaveResume(){try{FC.resume={year:year,studyMode:studyMode,filter:window.FC_FILTER_LABEL||'',questionId:(document.querySelector('.card:focus-within')||document.querySelector('.card'))?.dataset?.id||FC.resume.questionId||'',scrollY:window.scrollY,studyOpen:[...document.querySelectorAll('details.studyTopic')].map((d,i)=>d.open?i:-1).filter(i=>i>=0)};fcSave()}catch(e){}}
+let FC_SCROLL_TIMER;
+window.addEventListener('scroll',()=>{clearTimeout(FC_SCROLL_TIMER);FC_SCROLL_TIMER=setTimeout(fcSaveResume,500)},{passive:true});
+function fcRestoreResume(){if(!FC_RESUME_PENDING)return;FC_RESUME_PENDING=false;try{const r=FC.resume||{};if(r.year&&DATA[r.year])year=r.year;if(typeof r.studyMode==='boolean')studyMode=r.studyMode;window.FC_FILTER_LABEL=r.filter||'';renderTabs();render();setTimeout(()=>{if(r.questionId){const el=document.querySelector('[data-id=\"'+r.questionId+'\"]');if(el)el.scrollIntoView({block:'center'})}else if(Number.isFinite(r.scrollY))window.scrollTo(0,r.scrollY);},120)}catch(e){}}
+
 function fcSave(){try{localStorage.setItem(FC_KEY,JSON.stringify(FC));}catch(e){}}
 function fcId(y,n){return y+'-'+n}
 function fcAll(){return Object.keys(DATA).flatMap(y=>DATA[y].map(q=>({...q,year:y,id:fcId(y,q.no)})))}
@@ -192,7 +200,7 @@ function fcBindCards(){document.querySelectorAll('.card').forEach(el=>{
  const id=el.dataset.id,y=el.dataset.year,n=Number(el.dataset.no),x=DATA[y].find(q=>q.no===n);if(!x)return;
  el.querySelector('[data-book]')?.addEventListener('click',e=>{e.stopPropagation();if(FC.bookmarks[id])delete FC.bookmarks[id];else FC.bookmarks[id]=1;fcSave();render();});
  el.querySelectorAll('.option').forEach(btn=>btn.addEventListener('click',()=>{
-   if(FC.answers[id])return;const k=btn.dataset.key;FC.answers[id]=k;if(x.answer&&k!==x.answer)FC.wrong[id]=1;else delete FC.wrong[id];fcSave();
+   if(FC.answers[id])return;const k=btn.dataset.key;FC.answers[id]=k;if(x.answer&&k!==x.answer)FC.wrong[id]=1;else delete FC.wrong[id];fcSave();fcSaveResume();
    el.querySelectorAll('.option').forEach(b=>{b.disabled=true;b.classList.add('disabled');if(x.answer&&b.dataset.key===x.answer)b.classList.add('correct')});if(x.answer&&k!==x.answer)btn.classList.add('wrong');
    el.querySelector('.lock').textContent='🔓 Answer saved — Explanation उघडले आहे.';const r=el.querySelector('.result');r.innerHTML=fcResult(x,k);r.classList.add('show');fcMini();fcSetStats(stats.innerHTML.split('<div class="progressWrap">')[0]);
  }));
@@ -214,10 +222,10 @@ function render(){
  else app.innerHTML=arr.map(x=>fcCard(x)).join('');
  fcBindCards();
 }
-function renderTabs(){tabs.innerHTML=`<button class="studybtn ${studyMode?'active':''}" id="studyBtn">📚 Master Study</button>`+Object.keys(DATA).map(y=>`<button class="tab ${(!studyMode&&y===year&&!window.FC_FILTER_LABEL)?'active':''}" data-y="${y}">${y} <small>(${EXPECTED[y]||DATA[y].length})</small></button>`).join('');document.getElementById('studyBtn').onclick=()=>{studyMode=true;window.FC_FILTER_LABEL='';window.FC_FILTER=null;search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})};tabs.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{studyMode=false;year=b.dataset.y;window.FC_FILTER_LABEL='';window.FC_FILTER=null;search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})})}
+function renderTabs(){tabs.innerHTML=`<button class="studybtn ${studyMode?'active':''}" id="studyBtn">📚 Master Study</button>`+Object.keys(DATA).map(y=>`<button class="tab ${(!studyMode&&y===year&&!window.FC_FILTER_LABEL)?'active':''}" data-y="${y}">${y} <small>(${EXPECTED[y]||DATA[y].length})</small></button>`).join('');document.getElementById('studyBtn').onclick=()=>{studyMode=true;window.FC_FILTER_LABEL='';window.FC_FILTER=null;search.value='';renderTabs();render();fcSaveResume();window.scrollTo({top:0,behavior:'smooth'})};tabs.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{studyMode=false;year=b.dataset.y;window.FC_FILTER_LABEL='';window.FC_FILTER=null;search.value='';renderTabs();render();window.scrollTo({top:0,behavior:'smooth'})})}
 function renderStudyEnhanced(){
  document.body.classList.add('studyView');document.body.classList.remove('quizView');
- window.FC_FILTER_LABEL='';let q=search.value.trim().toLowerCase(),html=`<div class="studyIntro"><b>📚 Master Study / Revision</b><br>Repeated questions आणि core revision points compact स्वरूपात. Source मध्ये answer/rule वेगळा असेल तर तो वेगळाच दाखवला आहे; स्वतःहून correction केलेली नाही.</div>`;
+ window.FC_FILTER_LABEL='';let q=search.value.trim().toLowerCase(),html=`<div class="studyIntro"><b>📚 Master Study / Revision</b><br>🔄 तुमचा अभ्यास Refresh नंतरही जिथे थांबला होता तिथून Resume होईल.<br>Repeated questions आणि core revision points compact स्वरूपात. Source मध्ये answer/rule वेगळा असेल तर तो वेगळाच दाखवला आहे; स्वतःहून correction केलेली नाही.</div>`;
  html+=`<details class="studyTopic" open><summary>🔄 Year-wise Differences / Source Conflicts <span class="studyMeta">${CHANGE_DATA.length}</span></summary>`;for(const c of CHANGE_DATA)html+=`<div class="changeCard"><div class="changeTitle">${fcEscape(c.title)}</div><div style="margin:6px 0;font-weight:700">${fcEscape(c.q)}</div>${c.rows.map(r=>`<div class="changeRow"><div class="changeYear">${fcEscape(r[0])}</div><div>${fcEscape(r[1])}</div></div>`).join('')}<div class="changeNote">${fcEscape(c.note)}</div></div>`;html+='</details>';
  let shown=0;for(const t of STUDY_DATA.topics){let items=t.items.filter(it=>!q||(it.q+it.answer+it.point+it.source).toLowerCase().includes(q));if(q&&!items.length)continue;shown+=items.length;html+=`<details class="studyTopic"><summary>📘 ${fcEscape(t.topic)} <span class="studyMeta">${items.length} points</span></summary>`+items.map(it=>`<div class="studyItem"><div class="studyQ">${fcEscape(it.q)}</div><div class="studyAns">✅ ${fcEscape(it.answer)}</div><div class="studyPoint">📌 ${fcEscape(it.point)}</div><span class="studyYears">${fcEscape(it.source)}</span></div>`).join('')+'</details>'}
  app.innerHTML=html;fcSetStats(`<b>📚 Master Study</b> — ${shown} compact revision points`);
@@ -235,7 +243,7 @@ document.getElementById('clearBtn').onclick=()=>{if(confirm('सर्व saved 
 if(FC.dark){document.body.classList.add('dark');document.getElementById('darkBtn').textContent='☀️ Light Mode'}
 document.getElementById('rulesBtn').onclick=()=>document.getElementById('rulesPanel').classList.toggle('show');
 search.oninput=()=>{window.FC_FILTER_LABEL='';window.FC_FILTER=null;render()};document.getElementById('reset').onclick=()=>{search.value='';window.FC_FILTER_LABEL='';window.FC_FILTER=null;studyMode=false;renderTabs();render()};
-/* Initial enhanced render */
-renderTabs();render();
+/* Initial enhanced render — resume last session after refresh */
+fcRestoreResume();
 </script>
 </body></html>
